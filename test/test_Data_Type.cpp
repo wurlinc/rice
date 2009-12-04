@@ -187,7 +187,101 @@ TESTCASE(can_define_implicit_type_conversions_to_base_types)
   ASSERT_EQUAL(6, from_ruby<int>(result.value()));
 }
 
+namespace 
+{
+  const int degree2Radians = (3.14 / 180.0);
+  const int radian2Degrees = (180.0 / 3.14);
+
+  class Radian;
+
+  class Degree
+  {
+    public:
+      Degree(float d) : val_(d) {}
+      Degree(const Radian& r);
+
+      float valueDegrees() const { return val_; }
+      float valueRadians() const { return val_ * degree2Radians; }
+
+    private:
+      float val_;
+  };
+
+  class Radian
+  {
+    public:
+      Radian(float r) : val_(r) {} 
+      Radian(const Degree& d) : val_(d.valueRadians()) {}
+
+      float valueRadians() const { return val_; }
+      float valueDegrees() const { return val_ * radian2Degrees; }
+
+    private:
+      float val_;
+  };
+
+  // Due to circular dependencies, need to define some
+  // methods down here
+  Degree::Degree(const Radian& r)
+  {
+    val_ = r.valueDegrees();
+  }
+
+  /**
+   * And now some methods that work w/ the above two classes
+   */
+  bool isAcute(Degree degree) {
+    return degree.valueDegrees() < 90;
+  }
+
+  bool isObtuse(Radian radian) {
+    return radian.valueDegrees() > 90 && radian.valueDegrees() <= 180;
+  }
+
+  bool isRight(Degree* degree) {
+    return degree->valueDegrees() == 90;
+  }
+}
+
 TESTCASE(can_define_implicit_type_conversions_across_wrapped_types)
 {
+  define_class<Degree>("Degree")
+    .define_constructor(Constructor<Degree, float>())
+    .define_method("value_degrees", &Degree::valueDegrees)
+    .define_method("value_radians", &Degree::valueRadians)
+    .implicit_cast_to<Radian>();
 
+  define_class<Radian>("Radian")
+    .define_constructor(Constructor<Radian, float>())
+    .define_method("value_degrees", &Radian::valueDegrees)
+    .define_method("value_radians", &Radian::valueRadians)
+    .implicit_cast_to<Degree>();
+
+  define_global_function("is_acute", &isAcute);
+  define_global_function("is_obtuse", &isObtuse);
+  define_global_function("is_right", &isRight);
+
+  Module m = define_module("TestingModule");
+  Object result;
+
+  // ACUTE
+  result = m.instance_eval("is_acute(Degree.new(75))");
+  ASSERT(from_ruby<bool>(result.value()));
+
+  result = m.instance_eval("is_acute(Radian.new(2.0))");
+  ASSERT(!from_ruby<bool>(result.value()));
+
+  // OBTUSE
+  result = m.instance_eval("is_obtuse(Degree.new(75))");
+  ASSERT(!from_ruby<bool>(result.value()));
+
+  result = m.instance_eval("is_obtuse(Radian.new(2.0))");
+  ASSERT(from_ruby<bool>(result.value()));
+
+  // RIGHT
+  result = m.instance_eval("is_right(Degree.new(90))");
+  ASSERT(from_ruby<bool>(result.value()));
+
+  result = m.instance_eval("is_right(Radian.new(2.0))");
+  ASSERT(!from_ruby<bool>(result.value()));
 }
