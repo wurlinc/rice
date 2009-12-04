@@ -17,6 +17,10 @@ public:
   virtual ~Abstract_Caster() { }
 };
 
+/**
+ * Caster implementation that supports casting up and
+ * down the type heirarchy.
+ */
 template<typename Derived_T, typename Base_T>
 class Caster
   : public Abstract_Caster
@@ -55,6 +59,32 @@ private:
   Abstract_Caster * base_caster_;
   Module type_;
 };
+
+/**
+ * Caster implementation that supports implicit casting from one
+ * type to another, assuming that the actual casting is implemented
+ * in the library being exposed
+ */
+template<typename From_T, typename To_T>
+class ImplicitTypeCaster
+  : public Abstract_Caster
+{
+  public:
+    ImplicitTypeCaster(Abstract_Caster* base)
+      : base_caster_(base)
+    {}
+
+  protected:
+    virtual void * cast_to_base(void * derived, Module type) const
+    {
+        throw std::runtime_error(std::string("Implicit caster not implemented yet"));
+    }
+
+  private:
+    Abstract_Caster * base_caster_;
+};
+
+
 
 } // detail
 

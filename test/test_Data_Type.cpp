@@ -2,6 +2,7 @@
 #include "rice/Data_Type.hpp"
 #include "rice/Exception.hpp"
 #include "rice/Constructor.hpp"
+#include "rice/global_function.hpp"
 
 using namespace Rice;
 
@@ -45,7 +46,7 @@ namespace {
 
       int process() {
         std::vector<Listener*>::iterator i = mListeners.begin();
-        int accum = 0; 
+        int accum = 0;
         for(; i != mListeners.end(); i++) {
           accum += (*i)->getValue();
         }
@@ -99,7 +100,7 @@ TESTCASE(can_send_ruby_instance_back_into_rice)
  * The following test SEGFAULTs right now
  */
 /*
-TESTCASE(no_super_in_constructor_still_works) 
+TESTCASE(no_super_in_constructor_still_works)
 {
   Module m = define_module("TestingModule");
   Object handler = m.instance_eval("@handler = ListenerHandler.new");
@@ -119,3 +120,74 @@ TESTCASE(no_super_in_constructor_still_works)
   ASSERT_EQUAL(INT2NUM(8), handler.call("process").value());
 }
 */
+
+namespace {
+  /**
+   * Sample stolen and modified from boost::python::implicit:
+   * http://www.boost.org/doc/libs/1_41_0/libs/python/doc/v2/implicit.html
+   */
+  struct Real
+  {
+    Real(int x)
+      : v(x)
+    {}
+
+    operator int() const
+    {
+      return v;
+    }
+
+    int v;
+  };
+
+  int realValue(Real const& x)
+  {
+    return x.v;
+  }
+
+  Real makeReal(int n)
+  {
+    return Real(n);
+  }
+}
+
+template<>
+Rice::Object to_ruby<Real >(Real const & a) {
+	return Rice::Data_Object<Real >(new Real(a), Rice::Data_Type<Real>::klass(), 0, 0);
+}
+
+TESTCASE(can_define_implicit_type_conversions_to_base_types)
+{
+  define_class<Real>("Real")
+    .define_constructor(Constructor<Real, int>())
+    .implicit_cast_to<int>();
+
+  define_global_function("real_value", &realValue);
+  define_global_function("make_real", &makeReal);
+
+  // Define the conversion rules
+  //define_conversion<Real, int>();
+
+  Module m = define_module("TestingModule");
+
+  // As Real object
+  Object result = m.instance_eval("real_value( Real.new(4) )");
+  ASSERT_EQUAL(4, from_ruby<int>(result.value()));
+
+  // As fixnum (int)
+  result = m.instance_eval("real_value(4)");
+  ASSERT_EQUAL(4, from_ruby<int>(result.value()));
+
+  // As Real object
+  result = m.instance_eval("r = make_real( Real.new(6) ); real_value(r)");
+  ASSERT_EQUAL(6, from_ruby<int>(result.value()));
+
+  // As fixnum (int)
+  result = m.instance_eval("r = make_real(6); real_value(r)");
+  ASSERT_EQUAL(6, from_ruby<int>(result.value()));
+}
+
+TESTCASE(can_define_implicit_type_conversions_across_wrapped_types)
+{
+
+}

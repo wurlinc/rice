@@ -37,7 +37,7 @@ public:
   virtual ~Data_Type_Base() = 0;
 
   // Must be public to workaround gcc 3.3
-  typedef std::map<VALUE, detail::Abstract_Caster *> Casters;
+  typedef std::multimap<VALUE, detail::Abstract_Caster *> Casters;
 
 protected:
   virtual detail::Abstract_Caster * caster() const = 0;
@@ -47,6 +47,9 @@ protected:
 private:
   static Casters * casters_;
 };
+
+template<typename From_T, typename To_T>
+void define_conversion();
 
 //! Define a new data class in the namespace given by module.
 /*! The class will have a base class of Object.
@@ -176,6 +179,9 @@ public:
    */
   template<typename Director_T>
   Data_Type<T>& define_director();
+
+  template<typename Cast_T>
+  Rice::Data_Type<T>& implicit_cast_to();
 
   //! Convert ruby object x to type T.
   /*! \param x the object to convert.

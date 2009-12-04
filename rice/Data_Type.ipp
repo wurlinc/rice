@@ -144,6 +144,19 @@ define_director()
 }
 
 template<typename T>
+template<typename Cast_T>
+inline Rice::Data_Type<T>& Rice::Data_Type<T>::
+implicit_cast_to()
+{
+  detail::Abstract_Caster* caster =
+    new detail::ImplicitTypeCaster<T, Cast_T>(Data_Type<T>().caster());
+  Data_Type_Base::casters().insert(std::make_pair(klass_, caster));
+
+  return *this;
+}
+
+
+template<typename T>
 inline T * Rice::Data_Type<T>::
 from_ruby(Object x)
 {
