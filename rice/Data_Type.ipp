@@ -20,6 +20,9 @@ template<typename T>
 std::auto_ptr<Rice::detail::Abstract_Caster> Rice::Data_Type<T>::caster_;
 
 template<typename T>
+std::vector<Rice::detail::Abstract_Caster*> Rice::Data_Type<T>::implicit_types_;
+
+template<typename T>
 template<typename Base_T>
 inline Rice::Data_Type<T> Rice::Data_Type<T>::
 bind(Module const & klass)
@@ -139,7 +142,7 @@ template<typename Director_T>
 inline Rice::Data_Type<T>& Rice::Data_Type<T>::
 define_director()
 {
-  Rice::Data_Type<Director_T>::template bind<T>(*this);
+  Data_Type<Director_T>::template bind<T>(*this);
   return *this;
 }
 
@@ -148,9 +151,13 @@ template<typename Cast_T>
 inline Rice::Data_Type<T>& Rice::Data_Type<T>::
 implicit_cast_to()
 {
-  detail::Abstract_Caster* caster =
-    new detail::ImplicitTypeCaster<T, Cast_T>(Data_Type<T>().caster());
-  Data_Type_Base::casters().insert(std::make_pair(klass_, caster));
+  if(Data_Type<Cast_T>::is_bound()) {
+    detail::Abstract_Caster* caster = 
+      new detail::ImplicitCaster<T>(Data_Type<Cast_T>::caster());
+    implicit_types_.push_back(caster);
+  } else {
+    // TODO Throw an error, or something
+  }
 
   return *this;
 }
@@ -165,29 +172,47 @@ from_ruby(Object x)
   void * v = DATA_PTR(x.value());
   Class klass = x.class_of();
 
-  if(klass.value() == klass_)
-  {
-    // Great, not converting to a base/derived type
-    Data_Type<T> data_klass;
-    Data_Object<T> obj(x, data_klass);
-    return obj.get();
-  }
-
-  Data_Type_Base::Casters::const_iterator it = Data_Type_Base::casters().begin();
-  Data_Type_Base::Casters::const_iterator end = Data_Type_Base::casters().end();
-   
-  // Finding the bound type that relates to the given klass is
-  // a two step process. We iterate over the list of known type casters,
+  // Finding the bound type that relates to the given class is
+  // a three step process. We iterate over the list of known type casters,
   // looking for:
   //
   // 1) casters that handle this direct type
-  // 2) casters that handle types that are ancestors of klass
+  // 2) casters that have been marked as implicit
+  // 3) casters that handle types that are ancestors of klass
   //
   // Step 2 allows us to handle the case where a Rice-wrapped class
   // is subclassed in Ruby but then an instance of that class is passed
   // back into C++ (say, in a Listener / callback construction)
   //
 
+  // Step 1: are we the exact class we're looking for?
+  if(klass.value() == klass_)
+  {
+    Data_Type<T> data_klass;
+    Data_Object<T> obj(x, data_klass);
+    return obj.get();
+  }
+
+  // Step 2: Check for implicit casts from some unrelated class to this class
+  if(Data_Type<T>::implicit_types_.size() > 0) {
+    Data_Type<T>::ImplicitTypes::const_iterator type = Data_Type<T>::implicit_types_.begin();
+    Data_Type<T>::ImplicitTypes::const_iterator end = Data_Type<T>::implicit_types_.end();
+
+    for(; type != end; type++) 
+    {
+      if((*type)->can_cast_to(klass))
+      {
+        detail::ImplicitCaster<T> * caster = static_cast< detail::ImplicitCaster<T>* >((*type));
+        return caster->implicit_cast(v, klass);
+      }
+    }
+  }
+
+  // Step 3: Start traversing this class's ancestor list from the bottom up
+  //         looking for the first class that's a Rice-wrapped class.
+  Data_Type_Base::Casters::const_iterator it = Data_Type_Base::casters().begin();
+  Data_Type_Base::Casters::const_iterator end = Data_Type_Base::casters().end();
+  
   VALUE ancestors = rb_mod_ancestors(klass.value());
 
   int earliest = RARRAY_LEN(ancestors) + 1;

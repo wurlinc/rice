@@ -48,9 +48,6 @@ private:
   static Casters * casters_;
 };
 
-template<typename From_T, typename To_T>
-void define_conversion();
-
 //! Define a new data class in the namespace given by module.
 /*! The class will have a base class of Object.
  *  \param T the C++ type of the wrapped class.
@@ -180,6 +177,11 @@ public:
   template<typename Director_T>
   Data_Type<T>& define_director();
 
+  //! Register another C++ class as implicitly castable into this class.
+  /*!
+   *  Note: The type used here must already be registered in Rice, or an error
+   *  will be thrown.
+   */
   template<typename Cast_T>
   Rice::Data_Type<T>& implicit_cast_to();
 
@@ -193,6 +195,8 @@ public:
   /*! \return true if the object is bound, false otherwise.
    */
   static bool is_bound();
+
+  typedef std::vector<detail::Abstract_Caster*> ImplicitTypes;
 
 protected:
   //! Bind a Data_Type to a VALUE.
@@ -241,6 +245,11 @@ private:
     static Instances unbound_instances;
     return unbound_instances;
   }
+
+  /**
+   * List of casters that this class is allowed to implicitly cast into
+   */
+  static ImplicitTypes implicit_types_;
 };
 
 

@@ -15,6 +15,7 @@ class Abstract_Caster
 public:
   virtual void * cast_to_base(void * derived, Module type) const = 0;
   virtual ~Abstract_Caster() { }
+  virtual bool can_cast_to(Module type) const = 0;
 };
 
 /**
@@ -32,10 +33,15 @@ public:
   {
   }
 
+  virtual bool can_cast_to(Module type) const
+  {
+    return type.value() == type_.value();
+  }
+
 protected:
   virtual void * cast_to_base(void * derived, Module type) const
   {
-    if(type.value() == type_.value())
+    if(can_cast_to(type))
     {
       Derived_T * d(static_cast<Derived_T *>(derived));
       return static_cast<Base_T *>(d);
@@ -60,19 +66,26 @@ private:
   Module type_;
 };
 
-/**
- * Caster implementation that supports implicit casting from one
- * type to another, assuming that the actual casting is implemented
- * in the library being exposed
- */
-template<typename From_T, typename To_T>
-class ImplicitTypeCaster
+template<typename T>
+class ImplicitCaster
   : public Abstract_Caster
 {
   public:
+    typedef To_T CastToType;
+
     ImplicitTypeCaster(Abstract_Caster* base)
       : base_caster_(base)
     {}
+
+    From_T* implicit_cast(void * in, Module type) const
+    {
+      return new From_T(static_cast<To_T>(base_caster_->cast_to_base(in, type)));
+    }
+
+    virtual bool can_cast_to(Module type) const
+    {
+      return base_caster_->can_cast_to(type);
+    }
 
   protected:
     virtual void * cast_to_base(void * derived, Module type) const

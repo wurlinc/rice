@@ -121,72 +121,6 @@ TESTCASE(no_super_in_constructor_still_works)
 }
 */
 
-namespace {
-  /**
-   * Sample stolen and modified from boost::python::implicit:
-   * http://www.boost.org/doc/libs/1_41_0/libs/python/doc/v2/implicit.html
-   */
-  struct Real
-  {
-    Real(int x)
-      : v(x)
-    {}
-
-    operator int() const
-    {
-      return v;
-    }
-
-    int v;
-  };
-
-  int realValue(Real const& x)
-  {
-    return x.v;
-  }
-
-  Real makeReal(int n)
-  {
-    return Real(n);
-  }
-}
-
-template<>
-Rice::Object to_ruby<Real >(Real const & a) {
-	return Rice::Data_Object<Real >(new Real(a), Rice::Data_Type<Real>::klass(), 0, 0);
-}
-
-TESTCASE(can_define_implicit_type_conversions_to_base_types)
-{
-  define_class<Real>("Real")
-    .define_constructor(Constructor<Real, int>())
-    .implicit_cast_to<int>();
-
-  define_global_function("real_value", &realValue);
-  define_global_function("make_real", &makeReal);
-
-  // Define the conversion rules
-  //define_conversion<Real, int>();
-
-  Module m = define_module("TestingModule");
-
-  // As Real object
-  Object result = m.instance_eval("real_value( Real.new(4) )");
-  ASSERT_EQUAL(4, from_ruby<int>(result.value()));
-
-  // As fixnum (int)
-  result = m.instance_eval("real_value(4)");
-  ASSERT_EQUAL(4, from_ruby<int>(result.value()));
-
-  // As Real object
-  result = m.instance_eval("r = make_real( Real.new(6) ); real_value(r)");
-  ASSERT_EQUAL(6, from_ruby<int>(result.value()));
-
-  // As fixnum (int)
-  result = m.instance_eval("r = make_real(6); real_value(r)");
-  ASSERT_EQUAL(6, from_ruby<int>(result.value()));
-}
-
 namespace 
 {
   const int degree2Radians = (3.14 / 180.0);
@@ -197,7 +131,7 @@ namespace
   class Degree
   {
     public:
-      Degree(float d) : val_(d) {}
+      explicit Degree(float d) : val_(d) {}
       Degree(const Radian& r);
 
       float valueDegrees() const { return val_; }
@@ -210,7 +144,7 @@ namespace
   class Radian
   {
     public:
-      Radian(float r) : val_(r) {} 
+      explicit Radian(float r) : val_(r) {} 
       Radian(const Degree& d) : val_(d.valueRadians()) {}
 
       float valueRadians() const { return val_; }
@@ -285,3 +219,75 @@ TESTCASE(can_define_implicit_type_conversions_across_wrapped_types)
   result = m.instance_eval("is_right(Radian.new(2.0))");
   ASSERT(!from_ruby<bool>(result.value()));
 }
+
+/**
+ * Sample stolen and modified from boost::python::implicit:
+ * http://www.boost.org/doc/libs/1_41_0/libs/python/doc/v2/implicit.html
+ *
+ * The real question here, is this important to implement? It's much,
+ * much harder to do than just casting across multiple wrapped types
+ */
+/*
+namespace {
+  struct Real
+  {
+    Real(int x)
+      : v(x)
+    {}
+
+    operator int() const
+    {
+      return v;
+    }
+
+    int v;
+  };
+
+  int realValue(Real const& x)
+  {
+    return x.v;
+  }
+
+  Real makeReal(int n)
+  {
+    return Real(n);
+  }
+}
+
+template<>
+Rice::Object to_ruby<Real >(Real const & a) {
+	return Rice::Data_Object<Real >(new Real(a), Rice::Data_Type<Real>::klass(), 0, 0);
+}
+
+TESTCASE(can_define_implicit_type_conversions_to_base_types)
+{
+  define_class<Real>("Real")
+    .define_constructor(Constructor<Real, int>())
+    .implicit_cast_to<int>();
+
+  define_global_function("real_value", &realValue);
+  define_global_function("make_real", &makeReal);
+
+  // Define the conversion rules
+  //define_conversion<Real, int>();
+
+  Module m = define_module("TestingModule");
+
+  // As Real object
+  Object result = m.instance_eval("real_value( Real.new(4) )");
+  ASSERT_EQUAL(4, from_ruby<int>(result.value()));
+
+  // As fixnum (int)
+  result = m.instance_eval("real_value(4)");
+  ASSERT_EQUAL(4, from_ruby<int>(result.value()));
+
+  // As Real object
+  result = m.instance_eval("r = make_real( Real.new(6) ); real_value(r)");
+  ASSERT_EQUAL(6, from_ruby<int>(result.value()));
+
+  // As fixnum (int)
+  result = m.instance_eval("r = make_real(6); real_value(r)");
+  ASSERT_EQUAL(6, from_ruby<int>(result.value()));
+}
+*/
+
