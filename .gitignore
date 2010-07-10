@@ -28,3 +28,6 @@ doc
 mkinstalldirs
 *.def
 *.exe
+
+# Rubinius compiled files
+*.rbc
