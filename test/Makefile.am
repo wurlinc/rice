@@ -49,7 +49,6 @@ unittest_SOURCES = \
 	test_Module.cpp \
 	test_Object.cpp \
 	test_String.cpp \
-	test_Struct.cpp \
 	test_Symbol.cpp \
 	test_To_From_Ruby.cpp \
 	test_global_functions.cpp

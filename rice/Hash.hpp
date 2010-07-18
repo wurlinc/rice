@@ -1,10 +1,8 @@
 #ifndef Rice__Hash__hpp_
 #define Rice__Hash__hpp_
 
-#include "Builtin_Object_defn.hpp"
 #include "to_from_ruby_defn.hpp"
 #include "detail/ruby.hpp"
-#include "detail/st.hpp"
 #include "detail/traits.hpp"
 #include <iterator>
 
@@ -21,12 +19,13 @@ namespace Rice
 //!   h[10] = String("bar");
 //!   std::cout << String(h[42]) << std::endl;
 //! \endcode
-class Hash
-  : public Builtin_Object<RHash, T_HASH>
+class Hash : public Object
 {
 public:
   //! Construct a new hash.
   Hash();
+
+  Hash(VALUE v);
 
   //! Wrap an existing hash.
   /*! \param v the hash to wrap.
@@ -68,8 +67,8 @@ public:
   class Entry;
 
   //! A helper class for implementing iterators for a Hash.
-  template<typename Hash_Ref_T, typename Value_T>
-  class Iterator;
+//  template<typename Hash_Ref_T, typename Value_T>
+//  class Iterator;
 
 public:
   //! An iterator.
@@ -143,6 +142,7 @@ public:
 
 bool operator<(Hash::Entry const & lhs, Hash::Entry const & rhs);
 
+/*
 //! A helper class for implementing iterators for a Hash.
 template<typename Hash_Ref_T, typename Value_T>
 class Hash::Iterator
@@ -191,18 +191,12 @@ public:
 
 private:
   Hash hash_;
-  st_table * tbl_;
-#if RICE__RUBY_VERSION_CODE >= 190
-  st_index_t bin_;
-#else
-  int bin_;
-#endif
-  st_table_entry * ptr_;
 
   mutable typename detail::remove_const<Value_T>::Type tmp_;
 };
 
 } // namespace Rice
+*/
 
 #include "Hash.ipp"
 

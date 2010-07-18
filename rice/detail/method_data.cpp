@@ -9,9 +9,11 @@
 #include "../config.hpp"
 
 #ifndef RUBY_VM
+#ifndef RUBINIUS
 /* pre-YARV */
 #include <node.h>
 #include "env.hpp"
+#endif
 #endif
 
 /* 1.8.6 compatibility */
@@ -22,7 +24,7 @@
 namespace
 {
 
-VALUE DATA_MAGIC = rb_fix_new(0xDA7A);
+VALUE DATA_MAGIC = INT2FIX(0xDA7A);
 
 } // namespace
 
@@ -59,6 +61,7 @@ method_data()
 
 /* pre-YARV */
 
+/*
 VALUE
 Rice::detail::
 method_data()
@@ -66,6 +69,13 @@ method_data()
   VALUE origin = ruby_frame->last_class;
   VALUE memo = rb_ivar_get(origin, 0);
   return RARRAY_PTR(memo)[1];
+}
+*/
+
+VALUE Rice::detail::
+method_data()
+{
+  return Qnil;
 }
 
 #endif
@@ -111,6 +121,7 @@ Rice::detail::
 define_method_with_data(
     VALUE klass, ID id, VALUE (*cfunc)(ANYARGS), int arity, VALUE data)
 {
+  /*
   VALUE origin = rb_class_boot(klass);
 
   // Create the memo object with a magic number so we can detect if
@@ -155,5 +166,6 @@ define_method_with_data(
   // Clear the table so we don't try to double-free the method entry
   RCLASS_M_TBL(origin) = st_init_numtable();
 
+  */
   return Qnil;
 }

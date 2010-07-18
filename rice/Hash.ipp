@@ -8,30 +8,28 @@
 #include "Builtin_Object.hpp"
 #include <algorithm>
 
-// TODO: Evil hack
-struct st_table_entry {
-  unsigned int hash;
-  st_data_t key;
-  st_data_t record;
-  st_table_entry *next;
-};
-
 inline Rice::Hash::
 Hash()
-  : Builtin_Object<RHash, T_HASH>(protect(rb_hash_new))
+  : Object(protect(rb_hash_new))
+{
+}
+
+inline Rice::Hash::
+Hash(VALUE v)
+  : Object(v)
 {
 }
 
 inline Rice::Hash::
 Hash(Object v)
-  : Builtin_Object<RHash, T_HASH>(v)
+  : Object(v)
 {
 }
 
 inline size_t Rice::Hash::
 size() const
 {
-  return RHASH_TBL(this->value())->num_entries;
+  return from_ruby<size_t>(rb_hash_size(this->value()));
 }
 
 inline Rice::Hash::Proxy::
@@ -143,6 +141,7 @@ swap(Rice::Hash::Entry & entry)
   value.swap(entry.value);
 }
 
+/*
 template<typename Hash_Ref_T, typename Value_T>
 inline Rice::Hash::Iterator<Hash_Ref_T, Value_T>::
 Iterator(Hash_Ref_T hash, st_data_t bin, st_table_entry * ptr)
@@ -333,6 +332,7 @@ operator<(
     return false;
   }
 }
+*/
 
 #endif // Rice__Hash__ipp_
 

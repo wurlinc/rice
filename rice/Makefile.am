@@ -9,9 +9,7 @@ Identifier.cpp \
 Module.cpp \
 Object.cpp \
 String.cpp \
-Struct.cpp \
 Symbol.cpp \
-VM.cpp \
 Arg_operators.cpp \
 detail/check_ruby_type.cpp \
 detail/demangle.cpp \
@@ -68,11 +66,8 @@ Object.ipp \
 Object_defn.hpp \
 Require_Guard.hpp \
 String.hpp \
-Struct.hpp \
-Struct.ipp \
 Symbol.hpp \
 Symbol.ipp \
-VM.hpp \
 global_function.hpp \
 global_function.ipp \
 protect.hpp \
