@@ -14,25 +14,26 @@
 $:.unshift File.expand_path(File.dirname(__FILE__))
 
 require 'rbconfig'
-require 'rubygems'
 require 'ruby/lib/version.rb'
 
-gem_name = "rice-#{Rice::VERSION}"
-
-gem_base_dir = File.writable?(Gem.default_dir) ? Gem.default_dir : Gem.user_dir
-prefix_dir = File.join(gem_base_dir, "gems", gem_name, "ruby", "lib")
+prefix_dir = File.join(File.dirname(File.expand_path(__FILE__)), "ruby", "lib")
 with_ruby = File.join(Config::CONFIG["bindir"], Config::CONFIG["RUBY_INSTALL_NAME"])
 
 other_opts = ""
 env = ""
 
-arch = Config::CONFIG["arch"].split("-")[0]
-
 if RUBY_PLATFORM =~ /darwin10/
+  arch = Config::CONFIG["arch"].split("-")[0]
+
+  if arch == "universal"
+    arch = `uname -m`.strip
+  end
+
   other_opts = "--disable-dependency-tracking"
-  env = "ARCHFLAGS='-arch #{arch}'"
+  env = "ARCHFLAGS='-arch #{arch}' CPPFLAGS='-arch #{arch}'"
 elsif RUBY_PLATFORM =~ /darwin9/
-  env = "ARCHFLAGS='-arch #{`uname -p`.chomp}'"
+  arch = `uname -p`.chomp
+  env = "ARCHFLAGS='-arch #{arch}' CPPFLAGS='-arch #{arch}'"
 end
 
 system "#{env} sh configure --with-ruby=#{with_ruby} --prefix=#{prefix_dir} #{other_opts}"
